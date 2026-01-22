@@ -3,13 +3,13 @@ from rest_framework import generics, permissions
 from .models import User, Attendance, ClassSession
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from .serializers import UserSerializer, CourseSerializer, ClassSessionSerializer, FingerprintUploadSerializer, FingerprintAttendanceSerializer
+from .serializers import UserSerializer, CourseSerializer, ClassSessionSerializer, FingerprintUploadSerializer, FingerprintAttendanceSerializer, AttendanceReportSerializer, AttendanceUpdateSerializer
 from .permissions import IsLecturer, IsStudent , IsValidScanner 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-
+from rest_framework.response import Response
 
 
 # Register a student
@@ -260,7 +260,6 @@ class AdminAttendanceReportView(generics.ListAPIView):
         user = self.request.user
         if user.role != 'admin':
             return Attendance.objects.none()  # only admins can access
-        # Optional filters: course_id, student_id, date range
         course_id = self.request.query_params.get('course_id')
         student_id = self.request.query_params.get('student_id')
         queryset = Attendance.objects.all()
@@ -296,3 +295,63 @@ class AdminUserListView(generics.ListAPIView):
         if role in ['student', 'lecturer']:
             qs = qs.filter(role=role)
         return qs
+
+
+class LecturerAttendanceDashboard(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'lecturer':
+            return Response({"error": "Only lecturers allowed"}, status=403)
+
+        dashboard = []
+
+        for course in request.user.courses_taught.all():
+            sessions_data = []
+            for session in course.classsession_set.all().order_by('-start_time'):
+                attendances = session.attendance_set.all()
+                sessions_data.append({
+                    "session_id": session.id,
+                    "start_time": session.start_time,
+                    "end_time": session.end_time,
+                    "is_active": session.is_active,
+                    "total_students": course.students.count(),
+                    "present_students": attendances.filter(status='present').count(),
+                    "absent_students": attendances.filter(status='absent').count()
+                })
+            dashboard.append({
+                "course_id": course.id,
+                "course_name": course.name,
+                "sessions": sessions_data
+            })
+
+        return Response(dashboard)
+
+class AdminAttendanceDashboard(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'admin':
+            return Response({"error": "Only admins allowed"}, status=403)
+
+        data = []
+        courses = Course.objects.all()
+        for course in courses:
+            sessions = []
+            for session in course.classsession_set.all().order_by('-start_time'):
+                attendances = session.attendance_set.all()
+                sessions.append({
+                    "session_id": session.id,
+                    "course_name": course.name,
+                    "start_time": session.start_time,
+                    "end_time": session.end_time,
+                    "is_active": session.is_active,
+                    "present": attendances.filter(status='present').count(),
+                    "absent": attendances.filter(status='absent').count()
+                })
+            data.append({
+                "course_id": course.id,
+                "course_name": course.name,
+                "sessions": sessions
+            })
+        return Response(data)

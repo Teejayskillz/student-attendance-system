@@ -9,15 +9,15 @@ class User(AbstractUser):
         ('student', 'Student'),
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
-    fingerprint_hash = models.CharField(max_length=256, blank=True, null=True)
+    fingerprint_template = models.CharField(max_length=256, blank=True, null=True)
 
     def set_fingerprint(self, raw_fingerprint):
-        self.fingerprint_hash = hashlib.sha256(
+        self.fingerprint_template = hashlib.sha256(
             raw_fingerprint.encode()
         ).hexdigest()
 
     def check_fingerprint(self, raw_fingerprint):
-        return self.fingerprint_hash == hashlib.sha256(
+        return self.fingerprint_template == hashlib.sha256(
             raw_fingerprint.encode()
         ).hexdigest()
 
