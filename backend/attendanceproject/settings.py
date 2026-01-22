@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_spectacular', 
+    'drf_spectacular_sidecar',
     'students',
 ]
 
@@ -127,5 +129,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema", 
+    "DEFAULT_SCHEMA_CLASS": ("drf_spectacular.openapi.AutoSchema"), 
 }
+

@@ -33,3 +33,11 @@ class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
         fields = ['id', 'student', 'class_session', 'status', 'timestamp']
+
+class CourseSerializer(serializers.ModelSerializer):
+    lecturer = serializers.ReadOnlyField(source='lecturer.id')
+
+    class Meta:
+        model = Course
+        fields = ['id', 'name', 'lecturer', 'students']
+        read_only_fields = ['students']
