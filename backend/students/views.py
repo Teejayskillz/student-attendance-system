@@ -7,10 +7,10 @@ from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Course
-from .serializers import CourseSerializer
+from .serializers import CourseSerializer, ClassSessionSerializer
 from .permissions import IsLecturer, IsStudent
 from rest_framework.permissions import IsAuthenticated
+
 
 
 # Register a student
@@ -76,3 +76,86 @@ class CourseViewSet(viewsets.ModelViewSet):
         )
 
         return Response(students)
+
+
+class ClassSessionViewSet(viewsets.ModelViewSet):
+    serializer_class = ClassSessionSerializer
+    permission_classes = [IsLecturer]
+
+    def get_queryset(self):
+        # Lecturer sees only sessions for their courses
+        return ClassSession.objects.filter(
+            course__lecturer=self.request.user
+        )
+
+    #started class session
+    @action(detail=False, methods=['post'])
+    def start(self, request):
+        course_id = request.data.get('course_id')
+
+        if not course_id:
+            return Response(
+                {"error": "course_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            course = Course.objects.get(
+                id=course_id,
+                lecturer=request.user
+            )
+        except Course.DoesNotExist:
+            return Response(
+                {"error": "Course not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if session already active
+        if ClassSession.objects.filter(course=course, is_active=True).exists():
+            return Response(
+                {"error": "An active session already exists for this course"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        session = ClassSession.objects.create(
+            course=course,
+            start_time=timezone.now(),
+            is_active=True
+        )
+
+        return Response(
+            {
+                "message": "Class session started",
+                "session_id": session.id
+            },
+            status=status.HTTP_201_CREATED
+        )
+    
+    #ended class session
+    @action(detail=True, methods=['post'])
+    def end(self, request, pk=None):
+        try:
+            session = self.get_object()
+        except ClassSession.DoesNotExist:
+            return Response(
+                {"error": "Session not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not session.is_active:
+            return Response(
+                {"error": "Session already ended"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        session.is_active = False
+        session.end_time = timezone.now()
+        session.save()
+
+        return Response(
+            {"message": "Class session ended"},
+            status=status.HTTP_200_OK
+        )
+
+
+

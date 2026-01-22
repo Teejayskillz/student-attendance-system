@@ -41,3 +41,9 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = ['id', 'name', 'lecturer', 'students']
         read_only_fields = ['students']
+
+class ClassSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClassSession
+        fields = ['id', 'course', 'start_time', 'end_time', 'is_active']
+        read_only_fields = ['start_time', 'end_time', 'is_active']

@@ -1,10 +1,11 @@
 from django.urls import path, include
-from .views import StudentRegisterView,  CourseViewSet
+from .views import StudentRegisterView,  CourseViewSet , ClassSessionViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register(r'courses', CourseViewSet, basename='course')
+router.register(r'sessions', ClassSessionViewSet, basename='session')
 
 
 urlpatterns = [
