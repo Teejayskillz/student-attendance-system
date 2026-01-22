@@ -1,11 +1,12 @@
 from django.urls import path, include
-from .views import StudentRegisterView,  CourseViewSet , ClassSessionViewSet, FingerprintAttendanceView , FingerprintUploadView, AdminAttendanceReportView, AdminAttendanceUpdateView, AdminUserListView,LecturerAttendanceDashboard, AdminAttendanceDashboard
+from .views import StudentRegisterView, FingerprintAttendanceViewSet, CourseViewSet , ClassSessionViewSet, FingerprintAttendanceView , FingerprintUploadView, AdminAttendanceReportView, AdminAttendanceUpdateView, AdminUserListView,LecturerAttendanceDashboard, AdminAttendanceDashboard
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register(r'courses', CourseViewSet, basename='course')
 router.register(r'sessions', ClassSessionViewSet, basename='session')
+router.register(r'attendance', FingerprintAttendanceViewSet, basename='attendance')
 
 
 urlpatterns = [

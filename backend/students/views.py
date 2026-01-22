@@ -183,55 +183,37 @@ class FingerprintUploadView(APIView):
 
         return Response({"message": "Fingerprint registered successfully"})
 
+from rest_framework import viewsets
+from rest_framework.decorators import action
 
-class FingerprintAttendanceView(APIView):
-    authentication_classes = []   # scanner doesn’t login like users
+class FingerprintAttendanceViewSet(viewsets.ViewSet):
     permission_classes = [IsValidScanner]
 
-    def post(self, request):
+    @action(detail=False, methods=['post'])
+    def scan(self, request):
         serializer = FingerprintAttendanceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         fingerprint = serializer.validated_data['fingerprint_template']
-        # 1️⃣ Find student (secure fingerprint matching)
-        student = None
 
+        student = None
         for s in User.objects.filter(role='student', fingerprint_hash__isnull=False):
             if s.check_fingerprint(fingerprint):
                 student = s
                 break
 
-
         if not student:
-            return Response(
-                {"error": "Fingerprint not recognized"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Fingerprint not recognized"}, status=404)
 
-        # 2️⃣ Find active session
         session = ClassSession.objects.filter(is_active=True).select_related('course').first()
-
         if not session:
-            return Response(
-                {"error": "No active class session"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "No active class session"}, status=400)
 
-        # 3️⃣ Check enrollment
         if not session.course.students.filter(id=student.id).exists():
-            return Response(
-                {"error": "Student not enrolled for this course"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            return Response({"error": "Student not enrolled"}, status=403)
 
-        # 4️⃣ Prevent duplicate attendance
         if Attendance.objects.filter(student=student, class_session=session).exists():
-            return Response(
-                {"error": "Attendance already marked"},
-                status=status.HTTP_409_CONFLICT
-            )
+            return Response({"error": "Attendance already marked"}, status=409)
 
-        # 5️⃣ Mark attendance
         Attendance.objects.create(
             student=student,
             class_session=session,
@@ -239,14 +221,11 @@ class FingerprintAttendanceView(APIView):
             timestamp=timezone.now()
         )
 
-        return Response(
-            {
-                "message": "Attendance marked successfully",
-                "student": student.username,
-                "course": session.course.name
-            },
-            status=status.HTTP_201_CREATED
-        )
+        return Response({"message": "Attendance marked successfully",
+                         "student": student.username,
+                         "course": session.course.name}, status=201)
+
+
 #only registered scanners can mark attendance 
 class FingerprintAttendanceView(APIView):
     permission_classes = [IsValidScanner]
