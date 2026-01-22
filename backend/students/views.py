@@ -1,13 +1,14 @@
 from django.shortcuts import render
 from rest_framework import generics, permissions
-from .models import User
+from .models import User ,  Attendance, ClassSession
 from .serializers import UserSerializer
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from .serializers import CourseSerializer, ClassSessionSerializer, FingerprintUploadSerializer
+from .serializers import CourseSerializer, ClassSessionSerializer, FingerprintUploadSerializer, FingerprintAttendanceSerializer
 from .permissions import IsLecturer, IsStudent
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from django.utils import timezone
 
 
 # Register a student
@@ -178,4 +179,67 @@ class FingerprintUploadView(APIView):
         return Response(
             {"message": "Fingerprint uploaded successfully"},
             status=status.HTTP_200_OK
+        )
+
+
+class FingerprintAttendanceView(APIView):
+    authentication_classes = []   # scanner doesn’t login like users
+    permission_classes = []       # protected by logic instead
+
+    def post(self, request):
+        serializer = FingerprintAttendanceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        fingerprint = serializer.validated_data['fingerprint_template']
+
+        # 1️⃣ Find student
+        student = User.objects.filter(
+            fingerprint_template=fingerprint,
+            role='student'
+        ).first()
+
+        if not student:
+            return Response(
+                {"error": "Fingerprint not recognized"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 2️⃣ Find active session
+        session = ClassSession.objects.filter(is_active=True).select_related('course').first()
+
+        if not session:
+            return Response(
+                {"error": "No active class session"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3️⃣ Check enrollment
+        if not session.course.students.filter(id=student.id).exists():
+            return Response(
+                {"error": "Student not enrolled for this course"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # 4️⃣ Prevent duplicate attendance
+        if Attendance.objects.filter(student=student, class_session=session).exists():
+            return Response(
+                {"error": "Attendance already marked"},
+                status=status.HTTP_409_CONFLICT
+            )
+
+        # 5️⃣ Mark attendance
+        Attendance.objects.create(
+            student=student,
+            class_session=session,
+            status='present',
+            timestamp=timezone.now()
+        )
+
+        return Response(
+            {
+                "message": "Attendance marked successfully",
+                "student": student.username,
+                "course": session.course.name
+            },
+            status=status.HTTP_201_CREATED
         )

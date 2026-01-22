@@ -50,3 +50,6 @@ class ClassSessionSerializer(serializers.ModelSerializer):
 
 class FingerprintUploadSerializer(serializers.Serializer):
     fingerprint_template = serializers.CharField(write_only=True)
+
+class FingerprintAttendanceSerializer(serializers.Serializer):
+    fingerprint_template = serializers.CharField()

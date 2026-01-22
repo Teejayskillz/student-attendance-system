@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import StudentRegisterView,  CourseViewSet , ClassSessionViewSet
+from .views import StudentRegisterView,  CourseViewSet , ClassSessionViewSet, FingerprintAttendanceView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 
@@ -13,5 +13,6 @@ urlpatterns = [
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('fingerprint/upload/', FingerprintUploadView.as_view(), name='fingerprint-upload'),
+    path('attendance/scan/', FingerprintAttendanceView.as_view(), name='attendance-scan'),
     path('', include(router.urls)),
 ]
