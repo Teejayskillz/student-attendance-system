@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from .models import User, Course, ClassSession, Attendance
 
-# User Serializer
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -16,19 +15,18 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-# Course Serializer
+
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ['id', 'name', 'lecturer', 'students']
 
-# Class Session Serializer
 class ClassSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClassSession
         fields = ['id', 'course', 'start_time', 'end_time', 'is_active']
 
-# Attendance Serializer
+
 class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
@@ -53,3 +51,19 @@ class FingerprintUploadSerializer(serializers.Serializer):
 
 class FingerprintAttendanceSerializer(serializers.Serializer):
     fingerprint_template = serializers.CharField()
+
+
+class AttendanceReportSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.username', read_only=True)
+    course_name = serializers.CharField(source='class_session.course.name', read_only=True)
+    session_start = serializers.DateTimeField(source='class_session.start_time', read_only=True)
+    session_end = serializers.DateTimeField(source='class_session.end_time', read_only=True)
+
+    class Meta:
+        model = Attendance
+        fields = ['id', 'student_name', 'course_name', 'session_start', 'session_end', 'status', 'timestamp']
+
+class AttendanceUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attendance
+        fields = ['status']  # allow changing 'present' or 'absent'

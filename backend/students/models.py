@@ -69,7 +69,10 @@ class ScannerDevice(models.Model):
     name = models.CharField(max_length=100)
     api_key = models.CharField(max_length=64, unique=True)
     is_active = models.BooleanField(default=True)
-
+# Generates a unique API key automatically
+#Admin can deactivate a scanner if needed
+    def __str__(self):
+        return f"{self.name} - {'Active' if self.is_active else 'Inactive'}"
 
 class AttendanceLog(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE)

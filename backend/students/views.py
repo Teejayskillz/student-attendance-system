@@ -1,14 +1,15 @@
 from django.shortcuts import render
 from rest_framework import generics, permissions
-from .models import User ,  Attendance, ClassSession
-from .serializers import UserSerializer
+from .models import User, Attendance, ClassSession
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from .serializers import CourseSerializer, ClassSessionSerializer, FingerprintUploadSerializer, FingerprintAttendanceSerializer
+from .serializers import UserSerializer, CourseSerializer, ClassSessionSerializer, FingerprintUploadSerializer, FingerprintAttendanceSerializer
 from .permissions import IsLecturer, IsStudent , IsValidScanner 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from django.utils import timezone
+from django.contrib.auth import get_user_model
+
 
 
 # Register a student
@@ -185,7 +186,7 @@ class FingerprintUploadView(APIView):
 
 class FingerprintAttendanceView(APIView):
     authentication_classes = []   # scanner doesn’t login like users
-    permission_classes = []       # protected by logic instead
+    permission_classes = [IsValidScanner]
 
     def post(self, request):
         serializer = FingerprintAttendanceSerializer(data=request.data)
@@ -249,3 +250,49 @@ class FingerprintAttendanceView(APIView):
 #only registered scanners can mark attendance 
 class FingerprintAttendanceView(APIView):
     permission_classes = [IsValidScanner]
+
+
+class AdminAttendanceReportView(generics.ListAPIView):
+    serializer_class = AttendanceReportSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role != 'admin':
+            return Attendance.objects.none()  # only admins can access
+        # Optional filters: course_id, student_id, date range
+        course_id = self.request.query_params.get('course_id')
+        student_id = self.request.query_params.get('student_id')
+        queryset = Attendance.objects.all()
+        if course_id:
+            queryset = queryset.filter(class_session__course__id=course_id)
+        if student_id:
+            queryset = queryset.filter(student__id=student_id)
+        return queryset.order_by('-timestamp')
+
+
+class AdminAttendanceUpdateView(generics.UpdateAPIView):
+    serializer_class = AttendanceUpdateSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Attendance.objects.all()
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        if self.request.user.role != 'admin':
+            return Attendance.objects.none()
+        return super().get_queryset()
+
+
+
+class AdminUserListView(generics.ListAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.role != 'admin':
+            return User.objects.none()
+        role = self.request.query_params.get('role')  # optional: filter by student/lecturer
+        qs = User.objects.all()
+        if role in ['student', 'lecturer']:
+            qs = qs.filter(role=role)
+        return qs
