@@ -130,5 +130,11 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     "DEFAULT_SCHEMA_CLASS": ("drf_spectacular.openapi.AutoSchema"), 
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle"
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "30/min"
+    },
 }
 

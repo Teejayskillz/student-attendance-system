@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import StudentRegisterView,  CourseViewSet , ClassSessionViewSet, FingerprintAttendanceView
+from .views import StudentRegisterView,  CourseViewSet , ClassSessionViewSet, FingerprintAttendanceView , FingerprintUploadView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 

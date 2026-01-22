@@ -5,7 +5,7 @@ from .serializers import UserSerializer
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from .serializers import CourseSerializer, ClassSessionSerializer, FingerprintUploadSerializer, FingerprintAttendanceSerializer
-from .permissions import IsLecturer, IsStudent
+from .permissions import IsLecturer, IsStudent , IsValidScanner 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from django.utils import timezone
@@ -155,31 +155,32 @@ class ClassSessionViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-#views to upload 
+#views to upload fingerprint
 class FingerprintUploadView(APIView):
-    permission_classes = [IsAuthenticated, IsStudent]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        if request.user.role != 'student':
+            return Response(
+                {"error": "Only students can upload fingerprints"},
+                status=403
+            )
+
         serializer = FingerprintUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        student = request.user
-        fingerprint = serializer.validated_data['fingerprint_template']
-
-        # Prevent accidental overwrite
-        if student.fingerprint_template:
+        if request.user.fingerprint_hash:
             return Response(
                 {"error": "Fingerprint already registered"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=409
             )
 
-        student.fingerprint_template = fingerprint
-        student.save()
-
-        return Response(
-            {"message": "Fingerprint uploaded successfully"},
-            status=status.HTTP_200_OK
+        request.user.set_fingerprint(
+            serializer.validated_data['fingerprint_template']
         )
+        request.user.save()
+
+        return Response({"message": "Fingerprint registered successfully"})
 
 
 class FingerprintAttendanceView(APIView):
@@ -191,12 +192,14 @@ class FingerprintAttendanceView(APIView):
         serializer.is_valid(raise_exception=True)
 
         fingerprint = serializer.validated_data['fingerprint_template']
+        # 1️⃣ Find student (secure fingerprint matching)
+        student = None
 
-        # 1️⃣ Find student
-        student = User.objects.filter(
-            fingerprint_template=fingerprint,
-            role='student'
-        ).first()
+        for s in User.objects.filter(role='student', fingerprint_hash__isnull=False):
+            if s.check_fingerprint(fingerprint):
+                student = s
+                break
+
 
         if not student:
             return Response(
@@ -243,3 +246,6 @@ class FingerprintAttendanceView(APIView):
             },
             status=status.HTTP_201_CREATED
         )
+#only registered scanners can mark attendance 
+class FingerprintAttendanceView(APIView):
+    permission_classes = [IsValidScanner]

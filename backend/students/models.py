@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import hashlib
 
 class User(AbstractUser):
     ROLE_CHOICES = [
@@ -8,7 +9,17 @@ class User(AbstractUser):
         ('student', 'Student'),
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
-    fingerprint_template = models.BinaryField(null=True, blank=True)  # for students
+    fingerprint_hash = models.CharField(max_length=256, blank=True, null=True)
+
+    def set_fingerprint(self, raw_fingerprint):
+        self.fingerprint_hash = hashlib.sha256(
+            raw_fingerprint.encode()
+        ).hexdigest()
+
+    def check_fingerprint(self, raw_fingerprint):
+        return self.fingerprint_hash == hashlib.sha256(
+            raw_fingerprint.encode()
+        ).hexdigest()
 
 class Course(models.Model):
     name = models.CharField(max_length=100)
@@ -52,3 +63,15 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.student.username} - {self.class_session} - {self.status}"
+
+
+class ScannerDevice(models.Model):
+    name = models.CharField(max_length=100)
+    api_key = models.CharField(max_length=64, unique=True)
+    is_active = models.BooleanField(default=True)
+
+
+class AttendanceLog(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    scanner = models.ForeignKey(ScannerDevice, on_delete=models.SET_NULL, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
