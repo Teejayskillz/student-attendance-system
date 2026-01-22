@@ -12,5 +12,6 @@ urlpatterns = [
     path('register/', StudentRegisterView.as_view(), name='student-register'),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('fingerprint/upload/', FingerprintUploadView.as_view(), name='fingerprint-upload'),
     path('', include(router.urls)),
 ]

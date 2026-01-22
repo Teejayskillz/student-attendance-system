@@ -47,3 +47,6 @@ class ClassSessionSerializer(serializers.ModelSerializer):
         model = ClassSession
         fields = ['id', 'course', 'start_time', 'end_time', 'is_active']
         read_only_fields = ['start_time', 'end_time', 'is_active']
+
+class FingerprintUploadSerializer(serializers.Serializer):
+    fingerprint_template = serializers.CharField(write_only=True)

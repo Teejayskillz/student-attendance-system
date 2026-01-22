@@ -2,15 +2,12 @@ from django.shortcuts import render
 from rest_framework import generics, permissions
 from .models import User
 from .serializers import UserSerializer
-from rest_framework.response import Response
-
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.response import Response
-from .serializers import CourseSerializer, ClassSessionSerializer
+from .serializers import CourseSerializer, ClassSessionSerializer, FingerprintUploadSerializer
 from .permissions import IsLecturer, IsStudent
 from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.views import APIView
 
 
 # Register a student
@@ -157,5 +154,28 @@ class ClassSessionViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+#views to upload 
+class FingerprintUploadView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
 
+    def post(self, request):
+        serializer = FingerprintUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
+        student = request.user
+        fingerprint = serializer.validated_data['fingerprint_template']
+
+        # Prevent accidental overwrite
+        if student.fingerprint_template:
+            return Response(
+                {"error": "Fingerprint already registered"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        student.fingerprint_template = fingerprint
+        student.save()
+
+        return Response(
+            {"message": "Fingerprint uploaded successfully"},
+            status=status.HTTP_200_OK
+        )
