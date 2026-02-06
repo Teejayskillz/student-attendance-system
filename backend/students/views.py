@@ -193,6 +193,7 @@ class FingerprintAttendanceViewSet(viewsets.ViewSet):
         serializer = FingerprintAttendanceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         fingerprint = serializer.validated_data['fingerprint_template']
+        session_id = serializer.validated_data['session_id']
 
         student = None
         for s in User.objects.filter(role='student', fingerprint_hash__isnull=False):
@@ -203,9 +204,13 @@ class FingerprintAttendanceViewSet(viewsets.ViewSet):
         if not student:
             return Response({"error": "Fingerprint not recognized"}, status=404)
 
-        session = ClassSession.objects.filter(is_active=True).select_related('course').first()
+        session = ClassSession.objects.filter(  
+            id=session_id,
+            is_active=True
+        ).select_related('course').first()
+
         if not session:
-            return Response({"error": "No active class session"}, status=400)
+            return Response({"error": "Invalid or inactive class session"}, status=400)
 
         if not session.course.students.filter(id=student.id).exists():
             return Response({"error": "Student not enrolled"}, status=403)

@@ -56,7 +56,7 @@ class FingerprintUploadSerializer(serializers.Serializer):
 
 class FingerprintAttendanceSerializer(serializers.Serializer):
     fingerprint_template = serializers.CharField()
-
+    session_id = serializers.IntegerField()
 
 class AttendanceReportSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source='student.username', read_only=True)
