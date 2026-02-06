@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-bs2((8_l17nxw#m(*4&3cvl9396z2p&gv=slf=uoxv$@dz@q$_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['students.lagoswebdev.com', 'localhost', '127.0.0.1', '[::1]','https://students.lagoswebdev.com','http://students.lagoswebdev.com']
 
 
 # Application definition
