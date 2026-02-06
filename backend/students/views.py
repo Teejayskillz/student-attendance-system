@@ -3,7 +3,7 @@ from rest_framework import generics, permissions
 from .models import User, Attendance, ClassSession
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from .serializers import UserSerializer, CourseSerializer, ClassSessionSerializer, FingerprintUploadSerializer, FingerprintAttendanceSerializer, AttendanceReportSerializer, AttendanceUpdateSerializer
+from .serializers import UserSerializer, CourseSerializer, AdminUserSerializer, ClassSessionSerializer, FingerprintUploadSerializer, FingerprintAttendanceSerializer, AttendanceReportSerializer, AttendanceUpdateSerializer
 from .permissions import IsLecturer, IsStudent , IsValidScanner 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
