@@ -41,10 +41,9 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Course.objects.none()
 
     def perform_create(self, serializer):
-        # Only lecturers can create courses
+        # Only lecturers can create courses     
         if self.request.user.role != 'lecturer':
-            raise PermissionError("Only lecturers can create courses")
-
+            raise PermissionDenied("Only lecturers can create courses")
         serializer.save(lecturer=self.request.user)
     
     #students enroll in a course
@@ -263,7 +262,7 @@ class AdminAttendanceUpdateView(generics.UpdateAPIView):
 
 
 class AdminUserListView(generics.ListAPIView):
-    serializer_class = UserSerializer
+    serializer_class = AdminUserSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):

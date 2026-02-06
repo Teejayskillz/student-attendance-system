@@ -15,6 +15,11 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+class AdminUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'role']
+
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
