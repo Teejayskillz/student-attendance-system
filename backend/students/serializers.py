@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import User, Course, ClassSession, Attendance
+from django.contrib.auth import authenticate
+
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -72,3 +74,46 @@ class AttendanceUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
         fields = ['status']  # allow changing 'present' or 'absent'
+
+class LecturerLoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required=False)
+    email = serializers.EmailField(required=False)
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        username = attrs.get("username")
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        if not password:
+            raise serializers.ValidationError("Password is required.")
+        if not username and not email:
+            raise serializers.ValidationError("Provide username or email.")
+
+        # Default Django auth uses username, so:
+        user = None
+        if username:
+            user = authenticate(username=username, password=password)
+        else:
+            # email -> get username -> authenticate
+            try:
+                u = User.objects.get(email=email)
+                user = authenticate(username=u.username, password=password)
+            except User.DoesNotExist:
+                user = None
+
+        if not user:
+            raise serializers.ValidationError("Invalid credentials.")
+        if not user.is_active:
+            raise serializers.ValidationError("Account disabled.")
+        if user.role != "lecturer":
+            raise serializers.ValidationError("Lecturers only.")
+
+        attrs["user"] = user
+        return attrs
+
+
+class LecturerMeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "role"]

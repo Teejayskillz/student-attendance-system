@@ -10,6 +10,9 @@ from rest_framework.views import APIView
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from .serializers import LecturerLoginSerializer, LecturerMeSerializer
+
 
 
 # Register a student
@@ -169,7 +172,7 @@ class FingerprintUploadView(APIView):
         serializer = FingerprintUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if request.user.fingerprint_hash:
+        if request.user.fingerprint_template:
             return Response(
                 {"error": "Fingerprint already registered"},
                 status=409
@@ -196,7 +199,7 @@ class FingerprintAttendanceViewSet(viewsets.ViewSet):
         session_id = serializer.validated_data['session_id']
 
         student = None
-        for s in User.objects.filter(role='student', fingerprint_hash__isnull=False):
+        for s in User.objects.filter(role='student', fingerprint_template__isnull=False):
             if s.check_fingerprint(fingerprint):
                 student = s
                 break
@@ -338,3 +341,23 @@ class AdminAttendanceDashboard(APIView):
                 "sessions": sessions
             })
         return Response(data)
+
+
+class LecturerLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = LecturerLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data["user"]
+        token, _ = Token.objects.get_or_create(user=user)
+
+        return Response(
+            {
+                "message": "Lecturer login successful",
+                "token": token.key,
+                "user": LecturerMeSerializer(user).data,
+            },
+            status=status.HTTP_200_OK,
+        )

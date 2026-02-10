@@ -16,3 +16,7 @@ class IsValidScanner(BasePermission):
             api_key=api_key,
             is_active=True
         ).exists()
+
+class IsLecturerOnly(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role == "lecturer")

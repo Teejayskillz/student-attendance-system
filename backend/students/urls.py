@@ -21,4 +21,5 @@ urlpatterns = [
     path('lecturer/dashboard/', LecturerAttendanceDashboard.as_view(), name='lecturer-dashboard'),
     path('admin/dashboard/', AdminAttendanceDashboard.as_view(), name='admin-dashboard'),
     path('', include(router.urls)),
+    path('lecturer/login/', LecturerLoginView.as_view(), name='lecturer-login'),
 ]
